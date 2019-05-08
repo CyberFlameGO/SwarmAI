@@ -39,6 +39,6 @@ class LogEval extends Evaluator {
 
 class EricEval extends Evaluator {
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    return (pos.sub(goal)).mag();
+    return (PVector.sub(goal, pos)).mag();
   }
 }

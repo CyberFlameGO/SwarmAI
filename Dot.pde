@@ -5,7 +5,6 @@ class Dot {
 
   float fit = 0;
   float fitBest;
-  float inertia = 20;
   float c1 = 1; // Cognitive constant
   float c2 = 1; // Social constant
   float r = random(256);
@@ -59,7 +58,7 @@ class Dot {
     float r1 = random(1);
     float r2 = random(1);
 
-    PVector momentum = PVector.mult(this.vel, this.inertia);
+    PVector momentum = PVector.mult(this.vel, INERTIA);
 
     PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(this.c1 * r1);
 

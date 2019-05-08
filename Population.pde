@@ -1,7 +1,7 @@
 class Population {
   Dot[] dots;
   Dot gDotBest;
-
+  
   float gFitBest = -1;
   
   PVector gPosBest;

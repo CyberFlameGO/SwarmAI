@@ -7,20 +7,24 @@ Population birbs;
 Dot closest;
 boolean goalLock = false;
 boolean pause = false;
-final int SPEED_LIMIT = 2;
+int INERTIA;
+int SPEED_LIMIT;
 
 
 Evaluator evalr = new EricEval();
- 
+
 
 void setup() {
+  createGUI();
+  SPEED_LIMIT = speedSlider.getValueI();
+  INERTIA = inertiaSlide.getValueI();
   pause = true;
   size(1000, 750);
   textSize(12); 
   goal = new PVector(width/2, height/2);
   birbs = new Population(1000, goal, evalr);
 
-  createGUI();
+  
   mouse = new PVector(mouseX, mouseY);
 }
 
@@ -36,7 +40,7 @@ void draw() {
 
 
   if (goalLock) {     // If the goal is locked to the mouse
-    
+
     // Set the goal's position equal to the mouse's
     goal.x=mouseX;
     goal.y=mouseY;
@@ -45,8 +49,8 @@ void draw() {
   }
   if (!pause) { // Don't do any processing if the user pauses
     birbs.update(goal);
-    fill(0);
   }
+  fill(0);
   text("Target: " + goal, 3 * width/4.0 - 50, 10);
 }
 
@@ -54,6 +58,7 @@ void draw() {
 void mousePressed() {
   if (mouse.dist(goal) < 10) {
     goalLock = !goalLock;
+    birbs.reset();
   }
 }
 
@@ -64,5 +69,6 @@ void keyPressed() { // Hotkey definitions
     setup();
   } else if (key == 'l') {
     goalLock = !goalLock;
+    birbs.reset();
   }
 }
