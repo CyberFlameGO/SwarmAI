@@ -6,4 +6,5 @@ Particle Swarm Optimization visual demo in Processing.
 Emery Bacon
 ## Contributors
 Zach Wild
+
 OpenSourcery UMD
