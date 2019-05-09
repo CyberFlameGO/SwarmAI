@@ -8,6 +8,9 @@ boolean goalLock = false;
 boolean pause = false;
 boolean firstRun = true;
 
+float COG_CONST = 1; // Cognitive constant
+float SOC_CONST = 1; // Social constant
+
 int INERTIA;
 int SPEED_LIMIT;
 

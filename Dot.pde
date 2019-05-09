@@ -5,8 +5,7 @@ class Dot {
 
   float fit = 0;
   float fitBest;
-  float c1 = 1; // Cognitive constant
-  float c2 = 1; // Social constant
+  
   float r = random(256);
   float g = random(256);
   float b = random(256);
@@ -60,9 +59,9 @@ class Dot {
 
     PVector momentum = PVector.mult(this.vel, INERTIA);
 
-    PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(this.c1 * r1);
+    PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(COG_CONST * r1);
 
-    PVector social = (PVector.sub(parent.gDotBest.position, this.position)).mult(this.c2 * r2);
+    PVector social = (PVector.sub(parent.gDotBest.position, this.position)).mult(SOC_CONST * r2);
 
 
     this.vel = PVector.add(momentum, cognitive).add(social);

@@ -50,6 +50,6 @@ class MouseEval extends Evaluator {
     float posX = pos.x;
     float posY = pos.y;
     
-    return abs(goal.x - posX);
+    return pos.dist(goal);
   }
 }

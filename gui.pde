@@ -34,6 +34,11 @@ public void inertiaChange(GCustomSlider source, GEvent event) { //_CODE_:inertia
   INERTIA = source.getValueI();
 } //_CODE_:inertiaSlide:427060:
 
+public void constantChange(GSlider2D source, GEvent event) { //_CODE_:socCogAdj:776689:
+  COG_CONST = source.getValueXF();
+  SOC_CONST = source.getValueYF();
+} //_CODE_:socCogAdj:776689:
+
 
 
 // Create all the GUI controls. 
@@ -59,27 +64,45 @@ public void createGUI(){
   evalList.setItems(loadStrings("list_764184"), 0);
   evalList.setLocalColorScheme(GCScheme.GREEN_SCHEME);
   evalList.addEventHandler(this, "evalListClicked");
-  speedSlider = new GCustomSlider(this, 894, 100, 200, 40, "grey_blue");
+  speedSlider = new GCustomSlider(this, 908, 100, 200, 60, "grey_blue");
   speedSlider.setShowValue(true);
   speedSlider.setShowLimits(true);
   speedSlider.setTextOrientation(G4P.ORIENT_RIGHT);
   speedSlider.setRotation(PI/2, GControlMode.CORNER);
-  speedSlider.setLimits(2.0, 25.0, 1.0);
+  speedSlider.setLimits(25.0, 25.0, 1.0);
   speedSlider.setNbrTicks(25);
+  speedSlider.setStickToTicks(true);
   speedSlider.setShowTicks(true);
   speedSlider.setNumberFormat(G4P.DECIMAL, 1);
   speedSlider.setOpaque(true);
   speedSlider.addEventHandler(this, "speedChange");
-  inertiaSlide = new GCustomSlider(this, 978, 100, 200, 40, "grey_blue");
+  inertiaSlide = new GCustomSlider(this, 989, 100, 200, 60, "grey_blue");
   inertiaSlide.setShowValue(true);
   inertiaSlide.setShowLimits(true);
   inertiaSlide.setRotation(PI/2, GControlMode.CORNER);
-  inertiaSlide.setLimits(1.0, 1.0, 30.0);
+  inertiaSlide.setLimits(30.0, 30.0, 1.0);
   inertiaSlide.setNbrTicks(30);
+  inertiaSlide.setStickToTicks(true);
   inertiaSlide.setShowTicks(true);
   inertiaSlide.setNumberFormat(G4P.DECIMAL, 1);
   inertiaSlide.setOpaque(true);
   inertiaSlide.addEventHandler(this, "inertiaChange");
+  socCogAdj = new GSlider2D(this, 14, 112, 125, 125);
+  socCogAdj.setLimitsX(1.0, 0.0, 10.0);
+  socCogAdj.setLimitsY(1.0, 0.0, 10.0);
+  socCogAdj.setNumberFormat(G4P.DECIMAL, 1);
+  socCogAdj.setOpaque(true);
+  socCogAdj.addEventHandler(this, "constantChange");
+  label1 = new GLabel(this, 28, 246, 80, 20);
+  label1.setTextAlign(GAlign.CENTER, GAlign.MIDDLE);
+  label1.setText("X - Cognitive");
+  label1.setTextBold();
+  label1.setOpaque(true);
+  label2 = new GLabel(this, 149, 166, 80, 20);
+  label2.setTextAlign(GAlign.CENTER, GAlign.MIDDLE);
+  label2.setText("Y - Social");
+  label2.setTextBold();
+  label2.setOpaque(true);
 }
 
 // Variable declarations 
@@ -91,3 +114,6 @@ GImageButton button1;
 GDropList evalList; 
 GCustomSlider speedSlider; 
 GCustomSlider inertiaSlide; 
+GSlider2D socCogAdj; 
+GLabel label1; 
+GLabel label2; 
