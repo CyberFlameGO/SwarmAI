@@ -6,10 +6,8 @@ class Population {
   
   PVector gPosBest;
   PVector goal;
-  Evaluator eval;
 
-  Population(int size, PVector goal, Evaluator eval) {
-    this.eval = eval;
+  Population(int size, PVector goal) {
     dots = new Dot[size]; 
     this.goal = goal;
     for (int i = 0; i < size; i++) {

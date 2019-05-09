@@ -4,27 +4,31 @@ PVector goal;
 PVector mouse;
 
 Population birbs;
-Dot closest;
 boolean goalLock = false;
 boolean pause = false;
+boolean firstRun = true;
+
 int INERTIA;
 int SPEED_LIMIT;
 
-
-Evaluator evalr = new EricEval();
+Evaluator EVAL_FUNC = new EricEval();
 
 
 void setup() {
-  createGUI();
+  if (firstRun) {
+    createGUI();
+    firstRun = false;
+  }
   SPEED_LIMIT = speedSlider.getValueI();
   INERTIA = inertiaSlide.getValueI();
+  
   pause = true;
   size(1000, 750);
   textSize(12); 
   goal = new PVector(width/2, height/2);
-  birbs = new Population(1000, goal, evalr);
+  birbs = new Population(1000, goal);
 
-  
+
   mouse = new PVector(mouseX, mouseY);
 }
 
@@ -54,6 +58,31 @@ void draw() {
   text("Target: " + goal, 3 * width/4.0 - 50, 10);
 }
 
+void setEvaluator() {
+  switch (evalList.getSelectedText()) {
+  case "Linear Distance":
+    EVAL_FUNC = new LinearEval();
+    break;
+  case "Absolute Difference":
+    EVAL_FUNC = new AbsDiffEval();
+    break;
+  case "Logarithmic":
+    EVAL_FUNC = new LogEval();
+    break;
+  case "Distance/Velocity":
+    EVAL_FUNC = new DistVelEval();
+    break;
+  case "Eric, this one is yours":
+    EVAL_FUNC = new EricEval();
+    break;
+  case "Avoid mouse, seek goal":
+    EVAL_FUNC = new MouseEval();
+    break;
+  default:
+    EVAL_FUNC = new LinearEval();
+  }
+  birbs.reset();
+}
 
 void mousePressed() {
   if (mouse.dist(goal) < 10) {

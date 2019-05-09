@@ -77,7 +77,7 @@ class Dot {
    * replace the current best with the fitness
    */
   float evaluate(PVector goal) {
-    this.fit = parent.eval.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
+    this.fit = EVAL_FUNC.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
     
     if (this.fit < this.fitBest || fitBest == -1) {                      // If the new fitness value is better than the previous best:
       this.fitBest = this.fit;                                           //   replace the previous best fitness

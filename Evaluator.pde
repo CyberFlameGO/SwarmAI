@@ -10,7 +10,7 @@ class LinearEval extends Evaluator {
     float posX = pos.x;
     float posY = pos.y;
     
-    return abs(goal.x - posX);
+    return pos.dist(goal);
   }
 }
 
@@ -40,5 +40,16 @@ class LogEval extends Evaluator {
 class EricEval extends Evaluator {
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     return (PVector.sub(goal, pos)).mag();
+  }
+}
+
+class MouseEval extends Evaluator {
+
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    
+    float posX = pos.x;
+    float posY = pos.y;
+    
+    return abs(goal.x - posX);
   }
 }
