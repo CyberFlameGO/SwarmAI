@@ -24,6 +24,9 @@ public void pauseHis(GImageButton source, GEvent event) { //_CODE_:button1:67706
 
 public void evalListClicked(GDropList source, GEvent event) { //_CODE_:evalList:764184:
   setEvaluator();
+  //background(255);
+  underlay = mapHeat();
+  birbs.reset();
 } //_CODE_:evalList:764184:
 
 public void speedChange(GCustomSlider source, GEvent event) { //_CODE_:speedSlider:810070:

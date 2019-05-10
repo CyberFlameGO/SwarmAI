@@ -14,6 +14,7 @@ class Population {
       dots[i] = new Dot(this);
     }
     gDotBest = dots[0];
+    
   }
 
   //---------------------------------------------------------------
@@ -38,12 +39,23 @@ class Population {
   void evalMoveGroup() {
     for (Dot d : this.dots) {    // Iterate through the population of dots
       
-      if (!d.dead) d.evaluate(this.goal);     // Evaluate the current dot's fitness if it's still alive
+      if (d.dead && d.isBest) {
+        d.isBest = false;
+        this.gDotBest = null;
+      } else if (!d.dead) {
+        d.evaluate(this.goal);     // Evaluate the current dot's fitness if it's still alive
       
-      d.update_vel();    // Update the current dot's velocity
-      d.move();
+        d.update_vel();    // Update the current dot's velocity
+        d.move();
+      }
       
     }
+  }
+  
+  void setBest(Dot d) {
+    this.gDotBest.isBest = false;
+    d.isBest = true;
+    this.gDotBest = d;
   }
 
   void reset () {

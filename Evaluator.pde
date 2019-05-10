@@ -1,5 +1,4 @@
 abstract class Evaluator {
-
   public abstract float evalFunction(PVector goal, PVector vel, PVector pos);
 }
 
@@ -33,7 +32,8 @@ class DistVelEval extends Evaluator {
 class LogEval extends Evaluator {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    return 5f;
+    float val = pos.dist(goal);
+    return val != 0? 6*log(val) - (.005 * pow(val, 2)): 0;
   }
 }
 
@@ -49,7 +49,10 @@ class MouseEval extends Evaluator {
     
     float posX = pos.x;
     float posY = pos.y;
-    
-    return pos.dist(goal);
+    float val = pos.dist(goal);
+    if (pos.dist(mouse) < 100){
+      val += 100;
+    }
+    return val;
   }
 }

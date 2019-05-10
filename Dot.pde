@@ -9,7 +9,8 @@ class Dot {
   float r = random(256);
   float g = random(256);
   float b = random(256);
-
+  
+  boolean isBest = false;
   boolean dead = false;
   Population parent;
 
@@ -52,6 +53,7 @@ class Dot {
 
     if (position.x < 2 || position.y < 2 || position.x > width - 2 || position.y > height - 2) {
       this.dead = true;
+      return;
     }
 
     float r1 = random(1);
@@ -60,9 +62,8 @@ class Dot {
     PVector momentum = PVector.mult(this.vel, INERTIA);
 
     PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(COG_CONST * r1);
-
+    
     PVector social = (PVector.sub(parent.gDotBest.position, this.position)).mult(SOC_CONST * r2);
-
 
     this.vel = PVector.add(momentum, cognitive).add(social);
     this.vel.limit(SPEED_LIMIT);
@@ -82,8 +83,8 @@ class Dot {
       this.fitBest = this.fit;                                           //   replace the previous best fitness
       this.bestPosition = this.position;                                 //   replace the previous best position
       
-      if (this.fitBest < parent.gDotBest.fitBest) {                      // If the fitness (guaranteed to differ) is better than the
-        parent.gDotBest = this;                                          // best dot's fitness, replace that dot with this one
+      if (parent.gDotBest == null || this.fitBest < parent.gDotBest.fitBest) {                      // If the fitness (guaranteed to differ) is better than the
+        parent.setBest(this);
       }
     }
     return this.fit;

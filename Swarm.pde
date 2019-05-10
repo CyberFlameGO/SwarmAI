@@ -8,6 +8,8 @@ boolean goalLock = false;
 boolean pause = false;
 boolean firstRun = true;
 
+PImage underlay;
+
 float COG_CONST = 1; // Cognitive constant
 float SOC_CONST = 1; // Social constant
 
@@ -18,10 +20,12 @@ Evaluator EVAL_FUNC = new EricEval();
 
 
 void setup() {
+  
   if (firstRun) {
     createGUI();
     firstRun = false;
   }
+  
   SPEED_LIMIT = speedSlider.getValueI();
   INERTIA = inertiaSlide.getValueI();
   
@@ -31,14 +35,17 @@ void setup() {
   goal = new PVector(width/2, height/2);
   birbs = new Population(1000, goal);
 
+  underlay = mapHeat();
 
   mouse = new PVector(mouseX, mouseY);
+  
+  
 }
 
 void draw() {
   mouse = new PVector(mouseX, mouseY);
-
-  background(255);
+  //background(255);
+  background(underlay);
   // Display goal
   fill(255, 0, 0);
   ellipse(goal.x, goal.y, 10, 10);
@@ -85,6 +92,26 @@ void setEvaluator() {
     EVAL_FUNC = new LinearEval();
   }
   birbs.reset();
+}
+
+PImage mapHeat() {
+  background(255);
+  PVector point;
+  float pointVal;
+  PVector zeroVector = new PVector(0, 0);
+  zeroVector.limit(0);
+  float[] cardinals = {goal.x, width-goal.x, goal.y, width-goal.y};
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      point = new PVector(x, y);
+      pointVal = EVAL_FUNC.evalFunction(goal, zeroVector, point);
+      stroke(map(pointVal, 0, max(cardinals), 0, 255));
+      point(x,y);
+    }
+  }
+  saveFrame("heatmapview.png");
+  
+  return loadImage("heatmapview.png");
 }
 
 void mousePressed() {
