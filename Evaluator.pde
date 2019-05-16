@@ -33,7 +33,15 @@ class LogEval extends Evaluator {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     float val = pos.dist(goal);
-    return val != 0? 6*log(val) - (.005 * pow(val, 2)): 0;
+    return val != 0? 6*log(val): 0;
+  }
+}
+
+class SinEval extends Evaluator {
+  
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    float val = pos.dist(goal);
+    return (.25 * val) * (sin(.025 * val));
   }
 }
 

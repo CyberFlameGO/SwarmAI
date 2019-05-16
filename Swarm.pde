@@ -16,7 +16,7 @@ float SOC_CONST = 1; // Social constant
 int INERTIA;
 int SPEED_LIMIT;
 
-Evaluator EVAL_FUNC = new EricEval();
+Evaluator EVAL_FUNC;// = new LinearEval();
 
 
 void setup() {
@@ -34,18 +34,18 @@ void setup() {
   textSize(12); 
   goal = new PVector(width/2, height/2);
   birbs = new Population(1000, goal);
-
+  
+  setEvaluator();
   underlay = mapHeat();
 
   mouse = new PVector(mouseX, mouseY);
-  
   
 }
 
 void draw() {
   mouse = new PVector(mouseX, mouseY);
-  //background(255);
-  background(underlay);
+  background(255);
+  image(underlay, 0, 0);
   // Display goal
   fill(255, 0, 0);
   ellipse(goal.x, goal.y, 10, 10);
@@ -79,6 +79,9 @@ void setEvaluator() {
   case "Logarithmic":
     EVAL_FUNC = new LogEval();
     break;
+  case "Increasing Sine Function":
+    EVAL_FUNC = new SinEval();
+    break;
   case "Distance/Velocity":
     EVAL_FUNC = new DistVelEval();
     break;
@@ -95,29 +98,33 @@ void setEvaluator() {
 }
 
 PImage mapHeat() {
-  background(255);
-  PVector point;
+  PGraphics cache = createGraphics(width, height);
+  cache.beginDraw();
+  cache.background(255);
+  PVector point = new PVector(0,0);
   float pointVal;
   PVector zeroVector = new PVector(0, 0);
   zeroVector.limit(0);
+  
   float[] cardinals = {goal.x, width-goal.x, goal.y, width-goal.y};
+  
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
-      point = new PVector(x, y);
+      point.set(x, y);
       pointVal = EVAL_FUNC.evalFunction(goal, zeroVector, point);
-      stroke(map(pointVal, 0, max(cardinals), 0, 255));
-      point(x,y);
+      cache.stroke(map(pointVal, 0, max(cardinals), 0, 255));
+      cache.point(x,y);
     }
   }
-  saveFrame("heatmapview.png");
   
-  return loadImage("heatmapview.png");
+  cache.endDraw();
+  return cache.get();
 }
 
 void mousePressed() {
   if (mouse.dist(goal) < 10) {
     goalLock = !goalLock;
-    birbs.reset();
+    //birbs.reset();
   }
 }
 
@@ -128,6 +135,6 @@ void keyPressed() { // Hotkey definitions
     setup();
   } else if (key == 'l') {
     goalLock = !goalLock;
-    birbs.reset();
+    //birbs.reset();
   }
 }

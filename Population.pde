@@ -41,7 +41,6 @@ class Population {
       
       if (d.dead && d.isBest) {
         d.isBest = false;
-        this.gDotBest = null;
       } else if (!d.dead) {
         d.evaluate(this.goal);     // Evaluate the current dot's fitness if it's still alive
       
