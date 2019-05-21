@@ -1,27 +1,25 @@
-class Dot {
-  PVector position;
-  PVector vel;
-  PVector bestPosition;
+/**
+ * Dot describes a drawable object that will display as a circle of a fixed size.
+ * The drawable class adds a renderer object and a draw method that calls the
+ * renderer to draw to the screen.
+ */
+class Dot extends Drawable {
+  int radius;
+  Population container;
 
-  float fit = 0;
-  float fitBest;
-  
-  float r = random(256);
-  float g = random(256);
-  float b = random(256);
-  
-  boolean isBest = false;
-  boolean dead = false;
-  Population parent;
+  Dot(Population container, int radius, 
+      Renderer renderest, color strokeMe, color fillMe, PVector position) {
 
+    super(renderest, strokeMe, fillMe, position); // Initialize properties of Drawable class
 
-
-  Dot(Population parent) {
     int xDistr = (int) random(width);
     int yDistr = (int) random(height);
-    
-    this.parent = parent;
+
+    this.container = container;
+    this.radius = radius;
+
     position = new PVector(xDistr, yDistr);
+
     bestPosition = position;
     vel = PVector.random2D();
     vel.limit(SPEED_LIMIT);
@@ -31,42 +29,17 @@ class Dot {
   //--------------------------------------------------------------------------------
 
   void show() {
-    fill(r, g, b);
-    stroke(r, g, b);
-    ellipse(position.x, position.y, 4, 4);
-    if (parent.gDotBest == this) ellipse(position.x, position.y, 20, 20);
+    this.renderer.draw();
+  }
+  
+  void update_velocity() {
+
+    this.accelerator.update_velocity();
   }
 
   //---------------------------------------------------------------------------------
   void move() {
-    if (!dead) {
-      this.position = PVector.add(position, vel);
-    }
-  }
-
-  //---------------------------------------------------------------------------------   
-  /** 
-   * Update the internal velocity according to the fitness value.
-   * Chnages internal state
-   */
-  void update_vel() {
-
-    if (position.x < 2 || position.y < 2 || position.x > width - 2 || position.y > height - 2) {
-      this.dead = true;
-      return;
-    }
-
-    float r1 = random(1);
-    float r2 = random(1);
-
-    PVector momentum = PVector.mult(this.vel, INERTIA);
-
-    PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(COG_CONST * r1);
-    
-    PVector social = (PVector.sub(parent.gDotBest.position, this.position)).mult(SOC_CONST * r2);
-
-    this.vel = PVector.add(momentum, cognitive).add(social);
-    this.vel.limit(SPEED_LIMIT);
+    this.position = PVector.add(position, vel);
   }
 
   //--------------------------------------------------------------------------------
@@ -76,17 +49,33 @@ class Dot {
    * If the fitness is better than the current best,
    * replace the current best with the fitness
    */
-  float evaluate(PVector goal) {
+  abstract float evaluate() {
     this.fit = EVAL_FUNC.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
     
-    if (this.fit < this.fitBest || fitBest == -1) {                      // If the new fitness value is better than the previous best:
-      this.fitBest = this.fit;                                           //   replace the previous best fitness
-      this.bestPosition = this.position;                                 //   replace the previous best position
+    if (this.fit < this.fitBest || fitBest == -1) {                 // If the new fitness value is better than the previous best:
+      this.fitBest = this.fit;                                      //   replace the previous best fitness
+      this.bestPosition = this.position;                            //   replace the previous best position
       
-      if (parent.gDotBest == null || this.fitBest < parent.gDotBest.fitBest) {                      // If the fitness (guaranteed to differ) is better than the
-        parent.setBest(this);
+      if (container.gDotBest == null 
+        || this.fitBest < container.gDotBest.fitBest) {                // If the fitness (guaranteed to differ) is better than the
+        container.setBest(this);
       }
-    }
-    return this.fit;
+    }    return this.fit;
   }
+
+}
+
+
+class SwarmingDot extends Dot implements Moveable {
+    
+    Brain controller;
+    Velociraptor accelerator;
+
+    public SwarmingDot(String accStepType, Population container, int radius, Renderer renderest, color strokeMe, color fillMe, PVector position) {
+        
+        super(container, radius, renderest, shade, shade, position);
+
+        this.accelerator = Velociraptor.getAccelerator(accStepType);
+    }
+    
 }

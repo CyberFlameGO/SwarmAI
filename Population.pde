@@ -1,33 +1,21 @@
-class Population {
-  Dot[] dots;
-  Dot gDotBest;
+/**
+ * Container class to hold a population of drawable objects
+ */
+abstract class Population<T extends Drawable> {
+  T[] members;
+  int size;
   
-  float gFitBest = -1;
-  
-  PVector gPosBest;
-  PVector goal;
-
-  Population(int size, PVector goal) {
-    dots = new Dot[size]; 
-    this.goal = goal;
-    for (int i = 0; i < size; i++) {
-      dots[i] = new Dot(this);
-    }
-    gDotBest = dots[0];
-    
+  // Constructor boye
+  Population(int size) {
+    this.size = size;
+    members = new T[this.size];
   }
 
   //---------------------------------------------------------------
   void show() {
-    for (Dot d : dots) {
-      d.show();
+    for (T d : members) {
+      d.draw();
     }
-  }
-
-  //---------------------------------------------------------------
-  void update(PVector goal) {
-    this.goal = goal;
-    evalMoveGroup();
   }
 
   /**
@@ -36,33 +24,80 @@ class Population {
    * fitness is better than the global best. If it is, update the global
    * best and global best positions.
    */
-  void evalMoveGroup() {
-    for (Dot d : this.dots) {    // Iterate through the population of dots
-      
-      if (d.dead && d.isBest) {
-        d.isBest = false;
-      } else if (!d.dead) {
-        d.evaluate(this.goal);     // Evaluate the current dot's fitness if it's still alive
-      
-        d.update_vel();    // Update the current dot's velocity
-        d.move();
-      }
-      
+  void update() {
+    for (T d : this.members) {    // Iterate through the population of members
+      d.update();
+      d.evaluate();     // Evaluate the current dot's fitness
+
+      d.update_velocity();
+      d.move();
     }
   }
+
+}
+
+
+class SwarmPopulation extends Population<SwarmingDot> {
+  SwarmingDot gDotBest;
   
-  void setBest(Dot d) {
+  // Runtime constants
+  float COG_CONST = 1; // Cognitive constant
+  float SOC_CONST = 1; // Social constant
+  
+  // Global bests
+  float gFitBest = -1;  // Global best fitness
+  PVector gPosBest;     // Global best position
+  
+  // Constructor boye
+  SwarmPopulation(int size) {
+    super(size);
+    for (int i = 0; i < size; i++) {
+
+      color shade = color(
+            random(256),
+            random(256),
+            random(256)
+            );
+      PVector randomPos = new PVector((int) random(width), (int) random(height));
+
+      members[i] = new SwarmingDot(VEL_FUNC, this, new RenderDot(), shade, shade, randomPos);
+    }
+    gDotBest = members[0];
+  }
+
+  //---------------------------------------------------------------
+  void show() {
+    for (SwarmingDot d : members) {
+      d.draw();
+    }
+  }
+
+  /**
+   * Loop through the collection of particles and have each one evaluate itself.
+   * For each dot, call its eval function, then test if its best
+   * fitness is better than the global best. If it is, update the global
+   * best and global best positions.
+   */
+  void update() {
+    for (SwarmingDot d : this.members) {    // Iterate through the population of members
+
+      d.evaluate();     // Evaluate the current dot's fitness if it's still alive
+
+      d.update_velocity();
+      d.move();
+    }
+  }
+
+  void setBest(SwarmingDot d) {
     this.gDotBest.isBest = false;
     d.isBest = true;
     this.gDotBest = d;
   }
 
   void reset () {
-    for (Dot d : this.dots) {
+    for (SwarmingDot d : this.members) {
       d.bestPosition = d.position;
       d.fitBest = d.fit;
     }
-    // Don't need to change the global best fitness and position
-    // because we track those by aliasing the dot that generates those
   }
 }

@@ -1,22 +1,28 @@
-import g4p_controls.*; //<>//
+import g4p_controls.*; //<>// //<>//
 
-PVector goal;
-PVector mouse;
 
+// State variables for tracking the goal
+PVector goal;              // The machine learning target
+PVector mouse;             // Vector to track the mouse
+boolean goalLock = false;  // Whether the goal is locked to the mouse
+
+// Simulation state variables
+boolean pause = false;    // Whether the simulation is paused
+boolean firstRun = true;  // False after the first draw() loop
+PImage underlay;          // Graphics buffer to hold the heatmap background
+
+// Global state variables for the population
 Population birbs;
-boolean goalLock = false;
-boolean pause = false;
-boolean firstRun = true;
-
-PImage underlay;
-
 float COG_CONST = 1; // Cognitive constant
 float SOC_CONST = 1; // Social constant
 
-int INERTIA;
-int SPEED_LIMIT;
+// Physical constants
+int INERTIA;        // Bird inertia
+int SPEED_LIMIT;    // Speed limit on each bird
 
-Evaluator EVAL_FUNC;// = new LinearEval();
+// Dependency injections
+Evaluator EVAL_FUNC;    // Fitness function for the birdos
+String VEL_FUNC;  // Velocity update function for each burd
 
 
 void setup() {
@@ -28,13 +34,15 @@ void setup() {
   
   SPEED_LIMIT = speedSlider.getValueI();
   INERTIA = inertiaSlide.getValueI();
+  VEL_FUNC = "Full Model";  //  Change this to change how the dots update their velocity
   
   pause = true;
   size(1000, 750);
   textSize(12); 
   goal = new PVector(width/2, height/2);
-  birbs = new Population(1000, goal);
-  
+
+  birbs = new SwarmPopulation(1000);
+
   setEvaluator();
   underlay = mapHeat();
 
@@ -62,7 +70,7 @@ void draw() {
     birbs.reset();    // Reset the 'best' values
   }
   if (!pause) { // Don't do any processing if the user pauses
-    birbs.update(goal);
+    birbs.update();
   }
   fill(0);
   text("Target: " + goal, 3 * width/4.0 - 50, 10);
@@ -94,8 +102,22 @@ void setEvaluator() {
   default:
     EVAL_FUNC = new LinearEval();
   }
+
   birbs.reset();
 }
+
+// public Velociraptor getAccelerator(String stepType) {
+//   stepType = stepType.toLowerCase();
+//   if (stepType.equals("full model")) {
+//     return new FullModel(this);
+//   } else if (stepType.equals("cognitive only")) {
+//     return new CogOnly(this);
+//   } else if (stepType.equals("social only")) {
+//     return new SocOnly(this);
+//   } else {
+//     throw new IllegalArgumentException();
+//   }
+// }
 
 PImage mapHeat() {
   PGraphics cache = createGraphics(width, height);
