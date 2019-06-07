@@ -1,8 +1,8 @@
-abstract class Evaluator {
+abstract class Problem {
   public abstract float evalFunction(PVector goal, PVector vel, PVector pos);
 }
 
-class LinearEval extends Evaluator {
+class LinearEval extends Problem {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     
@@ -13,7 +13,7 @@ class LinearEval extends Evaluator {
   }
 }
 
-class AbsDiffEval extends Evaluator {  //    | |dX| - |dY| |
+class AbsDiffEval extends Problem {  //    | |dX| - |dY| |
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     float xterm = abs(goal.x - pos.x);
     float yterm = abs(goal.y - pos.y);
@@ -22,14 +22,14 @@ class AbsDiffEval extends Evaluator {  //    | |dX| - |dY| |
   }
 }
 
-class DistVelEval extends Evaluator {
+class DistVelEval extends Problem {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     return sqrt(pow(pos.dist(goal) + vel.mag() - 100, 2));
   }
 }
 
-class LogEval extends Evaluator {
+class LogEval extends Problem {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     float val = pos.dist(goal);
@@ -37,7 +37,7 @@ class LogEval extends Evaluator {
   }
 }
 
-class SinEval extends Evaluator {
+class SinEval extends Problem {
   
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     float val = pos.dist(goal);
@@ -45,13 +45,13 @@ class SinEval extends Evaluator {
   }
 }
 
-class EricEval extends Evaluator {
+class EricEval extends Problem {
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     return (PVector.sub(goal, pos)).mag();
   }
 }
 
-class MouseEval extends Evaluator {
+class MouseEval extends Problem {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     

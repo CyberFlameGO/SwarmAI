@@ -2,13 +2,13 @@
  * Container class to hold a population of drawable objects
  */
 abstract class Population<T extends Drawable> {
-  T[] members;
+  ArrayList<T> members;
   int size;
   
   // Constructor boye
   Population(int size) {
     this.size = size;
-    members = new T[this.size];
+    members = new ArrayList<T>(size);
   }
 
   //---------------------------------------------------------------
@@ -18,31 +18,13 @@ abstract class Population<T extends Drawable> {
     }
   }
 
-  /**
-   * Loop through the collection of particles and have each one evaluate itself.
-   * For each dot, call its eval function, then test if its best
-   * fitness is better than the global best. If it is, update the global
-   * best and global best positions.
-   */
-  void update() {
-    for (T d : this.members) {    // Iterate through the population of members
-      d.update();
-      d.evaluate();     // Evaluate the current dot's fitness
-
-      d.update_velocity();
-      d.move();
-    }
-  }
-
 }
 
-
+/**
+ * A population of a swarm of dots
+ */
 class SwarmPopulation extends Population<SwarmingDot> {
   SwarmingDot gDotBest;
-  
-  // Runtime constants
-  float COG_CONST = 1; // Cognitive constant
-  float SOC_CONST = 1; // Social constant
   
   // Global bests
   float gFitBest = -1;  // Global best fitness
@@ -60,16 +42,9 @@ class SwarmPopulation extends Population<SwarmingDot> {
             );
       PVector randomPos = new PVector((int) random(width), (int) random(height));
 
-      members[i] = new SwarmingDot(VEL_FUNC, this, new RenderDot(), shade, shade, randomPos);
+      members.add(new SwarmingDot(genAccelerator(VEL_FUNC), this, DOT_RADIUS, new RenderDot(), shade, shade, randomPos));
     }
-    gDotBest = members[0];
-  }
-
-  //---------------------------------------------------------------
-  void show() {
-    for (SwarmingDot d : members) {
-      d.draw();
-    }
+    gDotBest = members.get(0);
   }
 
   /**
@@ -80,24 +55,20 @@ class SwarmPopulation extends Population<SwarmingDot> {
    */
   void update() {
     for (SwarmingDot d : this.members) {    // Iterate through the population of members
-
-      d.evaluate();     // Evaluate the current dot's fitness if it's still alive
-
-      d.update_velocity();
+      d.update();
       d.move();
     }
   }
 
   void setBest(SwarmingDot d) {
-    this.gDotBest.isBest = false;
-    d.isBest = true;
+    this.gDotBest.setAsBest(false);
+    d.setAsBest(true);
     this.gDotBest = d;
   }
 
   void reset () {
     for (SwarmingDot d : this.members) {
-      d.bestPosition = d.position;
-      d.fitBest = d.fit;
+      d.resetBests();
     }
   }
 }

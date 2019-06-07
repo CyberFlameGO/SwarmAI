@@ -30,7 +30,7 @@ boolean firstRun = true;  // False after the first draw() loop
 PImage underlay;          // Graphics buffer to hold the heatmap background
 
 // Global state variables for the population
-Population birbs;
+SwarmPopulation birbs;
 float COG_CONST = 1; // Cognitive constant
 float SOC_CONST = 1; // Social constant
 
@@ -39,8 +39,9 @@ int INERTIA;        // Bird inertia
 int SPEED_LIMIT;    // Speed limit on each bird
 
 // Dependency injections
-Evaluator EVAL_FUNC;    // Fitness function for the birdos
-String VEL_FUNC;  // Velocity update function for each burd
+Problem PROBLEM;    // Fitness function for the birdos
+String VEL_FUNC;    // Velocity update function for each burd
+int DOT_RADIUS = 2; // Drawn radius for the dots
 
 
 public void setup() {
@@ -61,7 +62,7 @@ public void setup() {
 
   birbs = new SwarmPopulation(1000);
 
-  setEvaluator();
+  setProblem();
   underlay = mapHeat();
 
   mouse = new PVector(mouseX, mouseY);
@@ -94,37 +95,37 @@ public void draw() {
   text("Target: " + goal, 3 * width/4.0f - 50, 10);
 }
 
-public void setEvaluator() {
+public void setProblem() {
   switch (evalList.getSelectedText()) {
   case "Linear Distance":
-    EVAL_FUNC = new LinearEval();
+    PROBLEM = new LinearEval();
     break;
   case "Absolute Difference":
-    EVAL_FUNC = new AbsDiffEval();
+    PROBLEM = new AbsDiffEval();
     break;
   case "Logarithmic":
-    EVAL_FUNC = new LogEval();
+    PROBLEM = new LogEval();
     break;
   case "Increasing Sine Function":
-    EVAL_FUNC = new SinEval();
+    PROBLEM = new SinEval();
     break;
   case "Distance/Velocity":
-    EVAL_FUNC = new DistVelEval();
+    PROBLEM = new DistVelEval();
     break;
   case "Eric, this one is yours":
-    EVAL_FUNC = new EricEval();
+    PROBLEM = new EricEval();
     break;
   case "Avoid mouse, seek goal":
-    EVAL_FUNC = new MouseEval();
+    PROBLEM = new MouseEval();
     break;
   default:
-    EVAL_FUNC = new LinearEval();
+    PROBLEM = new LinearEval();
   }
 
   birbs.reset();
 }
 
-// public Velociraptor getAccelerator(String stepType) {
+// public Accelerator getAccelerator(String stepType) {
 //   stepType = stepType.toLowerCase();
 //   if (stepType.equals("full model")) {
 //     return new FullModel(this);
@@ -151,7 +152,7 @@ public PImage mapHeat() {
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
       point.set(x, y);
-      pointVal = EVAL_FUNC.evalFunction(goal, zeroVector, point);
+      pointVal = PROBLEM.evalFunction(goal, zeroVector, point);
       cache.stroke(map(pointVal, 0, max(cardinals), 0, 255));
       cache.point(x,y);
     }
@@ -178,134 +179,151 @@ public void keyPressed() { // Hotkey definitions
     //birbs.reset();
   }
 }
-abstract class Brain {
-    Moveable thinker;
-    public abstract void evaluate();
+abstract class Controller<T, P extends Population> {
+    T thinker;
+
+    public Controller(T thinker) {
+        this.thinker = thinker;
+    }
+    public abstract float evaluate(PVector position, PVector velocity, P container);
 }
 
 
-class SwarmBrain extends Brain {
+/**
+ * Controller for a dot using swarm intelligence
+ */
+class SwarmBrain extends Controller<SwarmingDot, SwarmPopulation> {
+
     PVector bestPosition;
+    PVector velocity;
+    
+    SwarmPopulation flock;
+
+    float fit;
     float bestFit;
     boolean isBest;
+
+    public SwarmBrain(SwarmingDot thinker) {
+        super(thinker);
+
+        this.bestPosition = this.thinker.position;
+        this.bestFit = -1;
+        this.isBest = false;
+    }
+
+    
 
     /**
      * Evaluate the fitness and update the internal state.
      * If the fitness is better than the current best,
      * replace the current best with the fitness
      */
-    public abstract float evaluate() {
-        this.fit = EVAL_FUNC.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
+    public float evaluate(PVector position, PVector velocity, SwarmPopulation flock) {
+        this.fit = PROBLEM.evalFunction(goal, thinker.velocity, position);  // Calculate fitness using the fitness function
         
-        if (this.fit < this.fitBest || fitBest == -1) {                 // If the new fitness value is better than the previous best:
-        this.fitBest = this.fit;                                      //   replace the previous best fitness
-        this.bestPosition = this.position;                            //   replace the previous best position
-        
-        if (parent.gDotBest == null 
-            || this.fitBest < parent.gDotBest.fitBest) {                // If the fitness (guaranteed to differ) is better than the
-            parent.setBest(this);
+        if (this.fit < this.bestFit || bestFit == -1) { // If the new fitness value is better than the previous best:
+            this.bestFit = this.fit;                    //   replace the previous best fitness
+            this.bestPosition = position;               //   replace the previous best position
+            
+            if (flock.gDotBest == null 
+                || this.bestFit < flock.gDotBest.controller.bestFit) {                // If the fitness (guaranteed to differ) is better than the
+                flock.setBest(this.thinker);
+            }
         }
-        }    return this.fit;
+        return this.fit;
+    }
+
+    public void resetBests() {
+        this.bestPosition = thinker.position;
+        this.bestFit = this.fit;
     }
 }
 /**
- * Dot describes a drawable object that will display as a circle of a fixed size.
+ * A drawable object that will display as a circle of fixed size.
  * The drawable class adds a renderer object and a draw method that calls the
  * renderer to draw to the screen.
  */
-class Dot extends Drawable {
+class Dot<P extends Population> extends Shape {
   int radius;
-  Population container;
+  P container;
 
-  Dot(Population container, int radius, 
-      Renderer renderest, int strokeMe, int fillMe, PVector position) {
+  Dot(P container, int radius, 
+      RenderDot renderest, int strokeMe, int fillMe, PVector position) {
 
     super(renderest, strokeMe, fillMe, position); // Initialize properties of Drawable class
-
-    int xDistr = (int) random(width);
-    int yDistr = (int) random(height);
 
     this.container = container;
     this.radius = radius;
 
-    position = new PVector(xDistr, yDistr);
-
-    bestPosition = position;
-    vel = PVector.random2D();
-    vel.limit(SPEED_LIMIT);
-    fitBest = -1;
-  }
-
-  //--------------------------------------------------------------------------------
-
-  public void show() {
-    this.renderer.draw();
-  }
-  
-  public void update_velocity() {
-
-    this.accelerator.update_velocity();
-  }
-
-  //---------------------------------------------------------------------------------
-  public void move() {
-    this.position = PVector.add(position, vel);
-  }
-
-  //--------------------------------------------------------------------------------
-
-  /**
-   * Evaluate the fitness and update the internal state.
-   * If the fitness is better than the current best,
-   * replace the current best with the fitness
-   */
-  public abstract float evaluate() {
-    this.fit = EVAL_FUNC.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
-    
-    if (this.fit < this.fitBest || fitBest == -1) {                 // If the new fitness value is better than the previous best:
-      this.fitBest = this.fit;                                      //   replace the previous best fitness
-      this.bestPosition = this.position;                            //   replace the previous best position
-      
-      if (container.gDotBest == null 
-        || this.fitBest < container.gDotBest.fitBest) {                // If the fitness (guaranteed to differ) is better than the
-        container.setBest(this);
-      }
-    }    return this.fit;
   }
 
 }
 
+/**
+ * A dot with a velocity, swarm controller, and accelerator.
+ */
+class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements Moveable {
 
-class SwarmingDot extends Dot implements Moveable {
+  // Velocity is a 2D vector
+  PVector velocity;
+  SwarmBrain controller;
+  A accelerator;
+
+  public SwarmingDot(A accel, SwarmPopulation container, int radius, RenderDot renderest, int strokeMe, int fillMe, PVector position) {
+
+    super(container, radius, renderest, strokeMe, fillMe, position);
+
+    this.accelerator = accel;
+    accel.setTarget(this);
     
-    Brain controller;
-    Velociraptor accelerator;
+    this.controller = new SwarmBrain(this);
+    this.velocity = PVector.random2D();
 
-    public SwarmingDot(String accStepType, Population container, int radius, Renderer renderest, int strokeMe, int fillMe, PVector position) {
-        
-        super(container, radius, renderest, shade, shade, position);
+    this.velocity.limit(SPEED_LIMIT);
+  }
 
-        this.accelerator = Velociraptor.getAccelerator(accStepType);
-    }
-    
+  //---------------------------------------------------------------------------------
+  public void move() {
+    this.position = PVector.add(this.position, this.velocity);
+  }
+
+  public void update() {
+    this.controller.evaluate(this.position, this.velocity, this.container);
+    this.accelerator.updateVelocity();
+  }
+
+  public void setAsBest(boolean isBest) {
+    this.controller.isBest = isBest;
+  }
+
+  public void resetBests() {
+    this.controller.resetBests();
+  }
+
+  public PVector getBestPos() {
+    return this.controller.bestPosition;
+  }
+
+  public PVector getVelocity() {
+    return this.velocity;
+  }
 }
 /**
  * The drawable abstract class describes an object that can
  * draw a representation of itself to the screen. To do this
  * it uses a renderer, which it calls in its draw() method.
+ * 
  */
-abstract class Drawable {
-    private Renderer renderer;
-    int objStroke, objFill;
-    PVector position;
+abstract class Drawable<R extends Renderer> {
+    protected R renderer;
+    public int objStroke, objFill;
 
-    Drawable(Renderer renderest, int strokeMe, int fillMe, PVector position) {
+    Drawable(R renderest, int strokeMe, int fillMe) {
         this.renderer = renderest;
-        this.renderer.setTarget = this;
+        this.renderer.setTarget(this);
         
         this.objStroke = strokeMe;
         this.objFill = fillMe;
-        this.position = position;
     }
 
     public void draw() {
@@ -313,29 +331,58 @@ abstract class Drawable {
     }
 }
 
+
 /**
- * An abstract class to outline an object 
+ * A drawable that's some kind of geometric shape with a 
+ * position on-screen.
+ */
+abstract class Shape extends Drawable {
+
+    PVector position;       // Defined on an individual basis–for example a circle uses the center while a rectangle uses a corner
+    float mainDimension;    // The largest dimension. A circle's radius, a rectangle's long side, etc
+    int sides;              // The number of sides the shape has–0 for a circle
+
+    public Shape(Renderer renderest, int strokeMe, int fillMe, PVector position) {
+        super(renderest, strokeMe, fillMe);
+        this.position = position;
+    }
+}
+
+
+
+// -------------------------------------------------------------
+// Rendering Classes
+
+/**
+ * An abstract class to outline an object that draws
+ * a drawable to the screen. Serves as a dependency 
+ * injection for Drawables to use.
+ *
+ * (I found it most helpful to think about the renderer as
+ * the "tool" the Drawable uses to draw itself)
  */
 abstract class Renderer<T extends Drawable> {
     T target;
 
-    public Renderer(T target) {
+    public abstract void draw() throws RenderTargetNotSetException;
+    public void setTarget(T target) {
         this.target = target;
     }
 
-    public abstract void draw();
-    public abstract void setTarget(T target);
 }
 
-class RenderDot<T extends Dot> extends Renderer {
 
-    T target;
-
-    public RenderDot(T target){
-        super(target);
-    }
+/**
+ * RenderDot renders anything that inherits the Dot class.
+ * As a result, it can handle drawing most objects that take
+ * the shape of a circle.
+ */
+class RenderDot extends Renderer<Dot>  {
     
     public void draw() {
+        if (target == null) {
+            throw new RenderTargetNotSetException();
+        }
         fill(target.objFill);
         stroke(target.objStroke);
 
@@ -343,84 +390,23 @@ class RenderDot<T extends Dot> extends Renderer {
     }
 }
 
-
-abstract class Evaluator {
-  public abstract float evalFunction(PVector goal, PVector vel, PVector pos);
-}
-
-class LinearEval extends Evaluator {
-
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    
-    float posX = pos.x;
-    float posY = pos.y;
-    
-    return pos.dist(goal);
-  }
-}
-
-class AbsDiffEval extends Evaluator {  //    | |dX| - |dY| |
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    float xterm = abs(goal.x - pos.x);
-    float yterm = abs(goal.y - pos.y);
-    return abs(xterm - yterm);
-    
-  }
-}
-
-class DistVelEval extends Evaluator {
-
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    return sqrt(pow(pos.dist(goal) + vel.mag() - 100, 2));
-  }
-}
-
-class LogEval extends Evaluator {
-
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    float val = pos.dist(goal);
-    return val != 0? 6*log(val): 0;
-  }
-}
-
-class SinEval extends Evaluator {
-  
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    float val = pos.dist(goal);
-    return (.25f * val) * (sin(.025f * val));
-  }
-}
-
-class EricEval extends Evaluator {
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    return (PVector.sub(goal, pos)).mag();
-  }
-}
-
-class MouseEval extends Evaluator {
-
-  public float evalFunction(PVector goal, PVector vel, PVector pos) {
-    
-    float posX = pos.x;
-    float posY = pos.y;
-    float val = pos.dist(goal);
-    if (pos.dist(mouse) < 100){
-      val += 100;
+class RenderTargetNotSetException extends RuntimeException {
+        
+    public RenderTargetNotSetException() {
+        super("Failed to set a valid target for the renderer");
     }
-    return val;
-  }
 }
 /**
  * Container class to hold a population of drawable objects
  */
 abstract class Population<T extends Drawable> {
-  T[] members;
+  ArrayList<T> members;
   int size;
   
   // Constructor boye
   Population(int size) {
     this.size = size;
-    members = new T[this.size];
+    members = new ArrayList<T>(size);
   }
 
   //---------------------------------------------------------------
@@ -430,31 +416,13 @@ abstract class Population<T extends Drawable> {
     }
   }
 
-  /**
-   * Loop through the collection of particles and have each one evaluate itself.
-   * For each dot, call its eval function, then test if its best
-   * fitness is better than the global best. If it is, update the global
-   * best and global best positions.
-   */
-  public void update() {
-    for (T d : this.members) {    // Iterate through the population of members
-      d.update();
-      d.evaluate();     // Evaluate the current dot's fitness
-
-      d.update_velocity();
-      d.move();
-    }
-  }
-
 }
 
-
+/**
+ * A population of a swarm of dots
+ */
 class SwarmPopulation extends Population<SwarmingDot> {
   SwarmingDot gDotBest;
-  
-  // Runtime constants
-  float COG_CONST = 1; // Cognitive constant
-  float SOC_CONST = 1; // Social constant
   
   // Global bests
   float gFitBest = -1;  // Global best fitness
@@ -472,16 +440,9 @@ class SwarmPopulation extends Population<SwarmingDot> {
             );
       PVector randomPos = new PVector((int) random(width), (int) random(height));
 
-      members[i] = new SwarmingDot(VEL_FUNC, this, new RenderDot(), shade, shade, randomPos);
+      members.add(new SwarmingDot(genAccelerator(VEL_FUNC), this, DOT_RADIUS, new RenderDot(), shade, shade, randomPos));
     }
-    gDotBest = members[0];
-  }
-
-  //---------------------------------------------------------------
-  public void show() {
-    for (SwarmingDot d : members) {
-      d.draw();
-    }
+    gDotBest = members.get(0);
   }
 
   /**
@@ -492,69 +453,128 @@ class SwarmPopulation extends Population<SwarmingDot> {
    */
   public void update() {
     for (SwarmingDot d : this.members) {    // Iterate through the population of members
-
-      d.evaluate();     // Evaluate the current dot's fitness if it's still alive
-
-      d.update_velocity();
+      d.update();
       d.move();
     }
   }
 
   public void setBest(SwarmingDot d) {
-    this.gDotBest.isBest = false;
-    d.isBest = true;
+    this.gDotBest.setAsBest(false);
+    d.setAsBest(true);
     this.gDotBest = d;
   }
 
   public void reset () {
     for (SwarmingDot d : this.members) {
-      d.bestPosition = d.position;
-      d.fitBest = d.fit;
+      d.resetBests();
     }
+  }
+}
+abstract class Problem {
+  public abstract float evalFunction(PVector goal, PVector vel, PVector pos);
+}
+
+class LinearEval extends Problem {
+
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    
+    float posX = pos.x;
+    float posY = pos.y;
+    
+    return pos.dist(goal);
+  }
+}
+
+class AbsDiffEval extends Problem {  //    | |dX| - |dY| |
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    float xterm = abs(goal.x - pos.x);
+    float yterm = abs(goal.y - pos.y);
+    return abs(xterm - yterm);
+    
+  }
+}
+
+class DistVelEval extends Problem {
+
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    return sqrt(pow(pos.dist(goal) + vel.mag() - 100, 2));
+  }
+}
+
+class LogEval extends Problem {
+
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    float val = pos.dist(goal);
+    return val != 0? 6*log(val): 0;
+  }
+}
+
+class SinEval extends Problem {
+  
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    float val = pos.dist(goal);
+    return (.25f * val) * (sin(.025f * val));
+  }
+}
+
+class EricEval extends Problem {
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    return (PVector.sub(goal, pos)).mag();
+  }
+}
+
+class MouseEval extends Problem {
+
+  public float evalFunction(PVector goal, PVector vel, PVector pos) {
+    
+    float posX = pos.x;
+    float posY = pos.y;
+    float val = pos.dist(goal);
+    if (pos.dist(mouse) < 100){
+      val += 100;
+    }
+    return val;
   }
 }
 interface Moveable {
 
   public void move();
-  public void update_velocity();
+  public void update();
+  public PVector getVelocity();
 
 }
 
-
-
-// -------------------------------------------------------
-// Accelerator generic abstract class and its implementations
-abstract class Velociraptor<T> {
-
-  T d;
-
-  public Velociraptor(T d) {
-    this.d = d;
-  }
-
-  public abstract void update_velocity();
-
-  public static Velociraptor getAccelerator(String stepType) {
+public static Accelerator genAccelerator(String stepType) {
   stepType = stepType.toLowerCase();
   if (stepType.equals("full model")) {
-    return new FullModel(this);
+    return new FullModel();
   } else if (stepType.equals("cognitive only")) {
-    return new CogOnly(this);
+    return new CogOnly();
   } else if (stepType.equals("social only")) {
-    return new SocOnly(this);
+    return new SocOnly();
   } else {
     throw new IllegalArgumentException();
   }
 }
 
+
+// -------------------------------------------------------
+// Accelerator generic abstract class and its implementations
+abstract class Accelerator<T extends Moveable> {
+
+  T d;
+
+  public void setTarget(T d) {
+    this.d = d;
+  }
+  public abstract void updateVelocity();
+
 }
 
-class FullModel<T> extends Velociraptor<T> {
-  public FullModel(T d) {
-    super(d);
-  }
-
-  public void update_velocity() {
+// Don't need the generics???
+class FullModel extends Accelerator<SwarmingDot> {
+    
+  public void updateVelocity() {
 
     float r1 = random(1);
     float r2 = random(1);
@@ -569,11 +589,7 @@ class FullModel<T> extends Velociraptor<T> {
 }
 
 
-class CogOnly<T> extends Velociraptor<T> {
-
-  public CogOnly(T d) {
-    super(d);
-  }
+class CogOnly<T extends SwarmingDot> extends Accelerator {
 
   public void update_velocity() {
 
@@ -588,11 +604,7 @@ class CogOnly<T> extends Velociraptor<T> {
 }
 
 
-class SocOnly<T> extends Velociraptor<T> {
-
-  public SocOnly(T d) {
-    super(d);
-  }
+class SocOnly<T extends SwarmingDot> extends Accelerator {
 
   public void update_velocity() {
     float r2 = random(1); // Keeping names in convention, r2 is the random number multiplied with the social constant
@@ -630,7 +642,7 @@ public void pauseHis(GImageButton source, GEvent event) { //_CODE_:button1:67706
 } //_CODE_:button1:677062:
 
 public void evalListClicked(GDropList source, GEvent event) { //_CODE_:evalList:764184:
-  setEvaluator();
+  setProblem();
   underlay = mapHeat();
   birbs.reset();
 } //_CODE_:evalList:764184:

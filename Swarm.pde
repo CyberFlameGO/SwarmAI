@@ -12,7 +12,7 @@ boolean firstRun = true;  // False after the first draw() loop
 PImage underlay;          // Graphics buffer to hold the heatmap background
 
 // Global state variables for the population
-Population birbs;
+SwarmPopulation birbs;
 float COG_CONST = 1; // Cognitive constant
 float SOC_CONST = 1; // Social constant
 
@@ -21,8 +21,9 @@ int INERTIA;        // Bird inertia
 int SPEED_LIMIT;    // Speed limit on each bird
 
 // Dependency injections
-Evaluator EVAL_FUNC;    // Fitness function for the birdos
-String VEL_FUNC;  // Velocity update function for each burd
+Problem PROBLEM;    // Fitness function for the birdos
+String VEL_FUNC;    // Velocity update function for each burd
+int DOT_RADIUS = 2; // Drawn radius for the dots
 
 
 void setup() {
@@ -43,7 +44,7 @@ void setup() {
 
   birbs = new SwarmPopulation(1000);
 
-  setEvaluator();
+  setProblem();
   underlay = mapHeat();
 
   mouse = new PVector(mouseX, mouseY);
@@ -76,37 +77,37 @@ void draw() {
   text("Target: " + goal, 3 * width/4.0 - 50, 10);
 }
 
-void setEvaluator() {
+void setProblem() {
   switch (evalList.getSelectedText()) {
   case "Linear Distance":
-    EVAL_FUNC = new LinearEval();
+    PROBLEM = new LinearEval();
     break;
   case "Absolute Difference":
-    EVAL_FUNC = new AbsDiffEval();
+    PROBLEM = new AbsDiffEval();
     break;
   case "Logarithmic":
-    EVAL_FUNC = new LogEval();
+    PROBLEM = new LogEval();
     break;
   case "Increasing Sine Function":
-    EVAL_FUNC = new SinEval();
+    PROBLEM = new SinEval();
     break;
   case "Distance/Velocity":
-    EVAL_FUNC = new DistVelEval();
+    PROBLEM = new DistVelEval();
     break;
   case "Eric, this one is yours":
-    EVAL_FUNC = new EricEval();
+    PROBLEM = new EricEval();
     break;
   case "Avoid mouse, seek goal":
-    EVAL_FUNC = new MouseEval();
+    PROBLEM = new MouseEval();
     break;
   default:
-    EVAL_FUNC = new LinearEval();
+    PROBLEM = new LinearEval();
   }
 
   birbs.reset();
 }
 
-// public Velociraptor getAccelerator(String stepType) {
+// public Accelerator getAccelerator(String stepType) {
 //   stepType = stepType.toLowerCase();
 //   if (stepType.equals("full model")) {
 //     return new FullModel(this);
@@ -133,7 +134,7 @@ PImage mapHeat() {
   for (int x = 0; x < width; x++) {
     for (int y = 0; y < height; y++) {
       point.set(x, y);
-      pointVal = EVAL_FUNC.evalFunction(goal, zeroVector, point);
+      pointVal = PROBLEM.evalFunction(goal, zeroVector, point);
       cache.stroke(map(pointVal, 0, max(cardinals), 0, 255));
       cache.point(x,y);
     }

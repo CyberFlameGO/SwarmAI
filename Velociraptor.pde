@@ -1,45 +1,42 @@
 interface Moveable {
 
   public void move();
-  public void update_velocity();
+  public void update();
+  public PVector getVelocity();
 
 }
 
-
-
-// -------------------------------------------------------
-// Accelerator generic abstract class and its implementations
-abstract class Velociraptor<T> {
-
-  T d;
-
-  public Velociraptor(T d) {
-    this.d = d;
-  }
-
-  public abstract void update_velocity();
-
-  public static Velociraptor getAccelerator(String stepType) {
+public static Accelerator genAccelerator(String stepType) {
   stepType = stepType.toLowerCase();
   if (stepType.equals("full model")) {
-    return new FullModel(this);
+    return new FullModel();
   } else if (stepType.equals("cognitive only")) {
-    return new CogOnly(this);
+    return new CogOnly();
   } else if (stepType.equals("social only")) {
-    return new SocOnly(this);
+    return new SocOnly();
   } else {
     throw new IllegalArgumentException();
   }
 }
 
+
+// -------------------------------------------------------
+// Accelerator generic abstract class and its implementations
+abstract class Accelerator<T extends Moveable> {
+
+  T d;
+
+  public void setTarget(T d) {
+    this.d = d;
+  }
+  public abstract void updateVelocity();
+
 }
 
-class FullModel<T> extends Velociraptor<T> {
-  public FullModel(T d) {
-    super(d);
-  }
-
-  public void update_velocity() {
+// Don't need the generics???
+class FullModel extends Accelerator<SwarmingDot> {
+    
+  public void updateVelocity() {
 
     float r1 = random(1);
     float r2 = random(1);
@@ -54,11 +51,7 @@ class FullModel<T> extends Velociraptor<T> {
 }
 
 
-class CogOnly<T> extends Velociraptor<T> {
-
-  public CogOnly(T d) {
-    super(d);
-  }
+class CogOnly<T extends SwarmingDot> extends Accelerator {
 
   public void update_velocity() {
 
@@ -73,11 +66,7 @@ class CogOnly<T> extends Velociraptor<T> {
 }
 
 
-class SocOnly<T> extends Velociraptor<T> {
-
-  public SocOnly(T d) {
-    super(d);
-  }
+class SocOnly<T extends SwarmingDot> extends Accelerator {
 
   public void update_velocity() {
     float r2 = random(1); // Keeping names in convention, r2 is the random number multiplied with the social constant

@@ -23,7 +23,7 @@ public void pauseHis(GImageButton source, GEvent event) { //_CODE_:button1:67706
 } //_CODE_:button1:677062:
 
 public void evalListClicked(GDropList source, GEvent event) { //_CODE_:evalList:764184:
-  setEvaluator();
+  setProblem();
   underlay = mapHeat();
   birbs.reset();
 } //_CODE_:evalList:764184:

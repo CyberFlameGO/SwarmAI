@@ -1,81 +1,70 @@
 /**
- * Dot describes a drawable object that will display as a circle of a fixed size.
+ * A drawable object that will display as a circle of fixed size.
  * The drawable class adds a renderer object and a draw method that calls the
  * renderer to draw to the screen.
  */
-class Dot extends Drawable {
+class Dot<P extends Population> extends Shape {
   int radius;
-  Population container;
+  P container;
 
-  Dot(Population container, int radius, 
-      Renderer renderest, color strokeMe, color fillMe, PVector position) {
+  Dot(P container, int radius, 
+      RenderDot renderest, color strokeMe, color fillMe, PVector position) {
 
     super(renderest, strokeMe, fillMe, position); // Initialize properties of Drawable class
-
-    int xDistr = (int) random(width);
-    int yDistr = (int) random(height);
 
     this.container = container;
     this.radius = radius;
 
-    position = new PVector(xDistr, yDistr);
-
-    bestPosition = position;
-    vel = PVector.random2D();
-    vel.limit(SPEED_LIMIT);
-    fitBest = -1;
-  }
-
-  //--------------------------------------------------------------------------------
-
-  void show() {
-    this.renderer.draw();
-  }
-  
-  void update_velocity() {
-
-    this.accelerator.update_velocity();
-  }
-
-  //---------------------------------------------------------------------------------
-  void move() {
-    this.position = PVector.add(position, vel);
-  }
-
-  //--------------------------------------------------------------------------------
-
-  /**
-   * Evaluate the fitness and update the internal state.
-   * If the fitness is better than the current best,
-   * replace the current best with the fitness
-   */
-  abstract float evaluate() {
-    this.fit = EVAL_FUNC.evalFunction(goal, this.vel, this.position);  // Calculate fitness using the fitness function
-    
-    if (this.fit < this.fitBest || fitBest == -1) {                 // If the new fitness value is better than the previous best:
-      this.fitBest = this.fit;                                      //   replace the previous best fitness
-      this.bestPosition = this.position;                            //   replace the previous best position
-      
-      if (container.gDotBest == null 
-        || this.fitBest < container.gDotBest.fitBest) {                // If the fitness (guaranteed to differ) is better than the
-        container.setBest(this);
-      }
-    }    return this.fit;
   }
 
 }
 
+/**
+ * A dot with a velocity, swarm controller, and accelerator.
+ */
+class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements Moveable {
 
-class SwarmingDot extends Dot implements Moveable {
+  // Velocity is a 2D vector
+  PVector velocity;
+  SwarmBrain controller;
+  A accelerator;
+
+  public SwarmingDot(A accel, SwarmPopulation container, int radius, RenderDot renderest, color strokeMe, color fillMe, PVector position) {
+
+    super(container, radius, renderest, strokeMe, fillMe, position);
+
+    this.accelerator = accel;
+    accel.setTarget(this);
     
-    Brain controller;
-    Velociraptor accelerator;
+    this.controller = new SwarmBrain(this);
+    this.velocity = PVector.random2D();
 
-    public SwarmingDot(String accStepType, Population container, int radius, Renderer renderest, color strokeMe, color fillMe, PVector position) {
-        
-        super(container, radius, renderest, shade, shade, position);
+    this.velocity.limit(SPEED_LIMIT);
+  }
 
-        this.accelerator = Velociraptor.getAccelerator(accStepType);
-    }
-    
+  //---------------------------------------------------------------------------------
+  void move() {
+    this.position = PVector.add(this.position, this.velocity);
+  }
+
+  public void update() {
+    this.controller.evaluate(this.position, this.velocity, this.container);
+    this.accelerator.updateVelocity();
+  }
+
+  public void setAsBest(boolean isBest) {
+    this.controller.isBest = isBest;
+  }
+
+  public void resetBests() {
+    this.controller.resetBests();
+  }
+
+  public PVector getBestPos() {
+    return this.controller.bestPosition;
+  }
+
+  PVector getVelocity() {
+    return this.velocity;
+  }
 }
