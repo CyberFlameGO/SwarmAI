@@ -27,7 +27,8 @@ boolean goalLock = false;  // Whether the goal is locked to the mouse
 // Simulation state variables
 boolean pause = false;    // Whether the simulation is paused
 boolean firstRun = true;  // False after the first draw() loop
-PImage underlay;          // Graphics buffer to hold the heatmap background
+PImage underlay;          // Graphics buffer to hold the heatmap
+                          // generated from the eval function
 
 // Global state variables for the population
 SwarmPopulation birbs;
@@ -40,35 +41,63 @@ int SPEED_LIMIT;    // Speed limit on each bird
 
 // Dependency injections
 Problem PROBLEM;    // Fitness function for the birdos
-String VEL_FUNC;    // Velocity update function for each burd
+String VEL_FUNC;    // Velocity update function for each burd,
+                    // defines their acceleration behavior
+
 int DOT_RADIUS = 2; // Drawn radius for the dots
 
-
+/**Set up the simulation, defining the necessary constants,
+ * objects, and environment attributes.
+ * 
+ * Create the GUI from g4p on the first run, then sets the
+ * constants to the values given for them by the gui.
+ * Define the window and various attributes/elements that
+ * will display therein. After setting the problem and
+ * drawing the background, start tracking the mouse and
+ * exit to the repeatedly called "draw()" function.
+ *
+ * Run when the program is first executed, as well as
+ * on any kind of reset.
+ */
 public void setup() {
   
+  // Create the GUI the first time it executes, then make sure
+  // it isn't redrawn on every reset
   if (firstRun) {
     createGUI();
     firstRun = false;
   }
   
-  SPEED_LIMIT = speedSlider.getValueI();
+  // Set the constants, defined as they appear above
+  SPEED_LIMIT = speedSlider.getValueI(); 
   INERTIA = inertiaSlide.getValueI();
-  VEL_FUNC = "Full Model";  //  Change this to change how the dots update their velocity
+  VEL_FUNC = "Full Model";
   
-  pause = true;
-  
-  textSize(12); 
-  goal = new PVector(width/2, height/2);
+  pause = true;         // Start the simulation paused, so the
+                        // user must start it manually
 
+        // Set the window dimensions in pixels
+  textSize(12);         // Font size in the window
+
+  goal = new PVector(   // Create the goal. This is a point
+    width/2, height/2   // on the screen that represents the
+    );                  // origin of the evaluation function.
+
+  // Make a new population of SwarmingDots
   birbs = new SwarmPopulation(1000);
 
-  setProblem();
-  underlay = mapHeat();
+  setProblem();         // Define the evaluation function, the "problem"
+  underlay = mapHeat(); // Use the eval function to create the background
 
+  // Start tracking the position of the mouse in the window
   mouse = new PVector(mouseX, mouseY);
   
 }
 
+/**The update function, called every frame to update the simulation
+ * stat
+ * 
+ */
 public void draw() {
   mouse = new PVector(mouseX, mouseY);
   background(255);
@@ -125,18 +154,18 @@ public void setProblem() {
   birbs.reset();
 }
 
-// public Accelerator getAccelerator(String stepType) {
-//   stepType = stepType.toLowerCase();
-//   if (stepType.equals("full model")) {
-//     return new FullModel(this);
-//   } else if (stepType.equals("cognitive only")) {
-//     return new CogOnly(this);
-//   } else if (stepType.equals("social only")) {
-//     return new SocOnly(this);
-//   } else {
-//     throw new IllegalArgumentException();
-//   }
-// }
+public Accelerator genAccelerator(String stepType) {
+  stepType = stepType.toLowerCase();
+  if (stepType.equals("full model")) {
+    return new FullModel();
+  } else if (stepType.equals("cognitive only")) {
+    return new CogOnly();
+  } else if (stepType.equals("social only")) {
+    return new SocOnly();
+  } else {
+    throw new IllegalArgumentException();
+  }
+}
 
 public PImage mapHeat() {
   PGraphics cache = createGraphics(width, height);
@@ -275,7 +304,7 @@ class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements
 
     this.accelerator = accel;
     accel.setTarget(this);
-    
+
     this.controller = new SwarmBrain(this);
     this.velocity = PVector.random2D();
 
@@ -292,21 +321,36 @@ class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements
     this.accelerator.updateVelocity();
   }
 
+  public void resetBests() {
+    this.controller.resetBests();
+  }
+
   public void setAsBest(boolean isBest) {
     this.controller.isBest = isBest;
   }
 
-  public void resetBests() {
-    this.controller.resetBests();
+  public void setVelocity(PVector newVel) {
+    this.velocity = newVel;
+    this.velocity.limit(SPEED_LIMIT);
+  }
+
+  public PVector getPosition() {
+    return this.position;
+  }
+
+  public PVector getVelocity() {
+    return this.velocity;
   }
 
   public PVector getBestPos() {
     return this.controller.bestPosition;
   }
 
-  public PVector getVelocity() {
-    return this.velocity;
+  public SwarmPopulation getContainer() {
+    return this.container;
   }
+
+
 }
 /**
  * The drawable abstract class describes an object that can
@@ -469,6 +513,10 @@ class SwarmPopulation extends Population<SwarmingDot> {
       d.resetBests();
     }
   }
+
+  public PVector getGBestPos() {
+    return this.gDotBest.getBestPos();
+  }
 }
 abstract class Problem {
   public abstract float evalFunction(PVector goal, PVector vel, PVector pos);
@@ -544,18 +592,6 @@ interface Moveable {
 
 }
 
-public static Accelerator genAccelerator(String stepType) {
-  stepType = stepType.toLowerCase();
-  if (stepType.equals("full model")) {
-    return new FullModel();
-  } else if (stepType.equals("cognitive only")) {
-    return new CogOnly();
-  } else if (stepType.equals("social only")) {
-    return new SocOnly();
-  } else {
-    throw new IllegalArgumentException();
-  }
-}
 
 
 // -------------------------------------------------------
@@ -579,42 +615,39 @@ class FullModel extends Accelerator<SwarmingDot> {
     float r1 = random(1);
     float r2 = random(1);
     
-    PVector momentum = PVector.mult(this.d.vel, INERTIA);
-    PVector cognitive = (PVector.sub(this.d.bestPosition, this.d.position)).mult(COG_CONST * r1); 
-    PVector social = (PVector.sub(this.d.parent.gDotBest.position, this.d.position)).mult(SOC_CONST * r2);
+    PVector momentum = PVector.mult(this.d.getVelocity(), INERTIA);
+    PVector cognitive = (PVector.sub(this.d.getBestPos(), this.d.getPosition())).mult(COG_CONST * r1); 
+    PVector social = (PVector.sub(this.d.getContainer().getGBestPos(), this.d.getPosition())).mult(SOC_CONST * r2);
 
-    this.d.vel = PVector.add(momentum, cognitive).add(social);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, cognitive).add(social));
   }
 }
 
 
-class CogOnly<T extends SwarmingDot> extends Accelerator {
+class CogOnly extends Accelerator<SwarmingDot> {
 
-  public void update_velocity() {
+  public void updateVelocity() {
 
     float r1 = random(1); // Keeping names in convention, r1 is the random number multiplied with the cognitive constant
     
-    PVector momentum = PVector.mult(this. d.vel, INERTIA);
-    PVector cognitive = (PVector.sub(this.d.bestPosition, this.d.position)).mult(COG_CONST * r1);
+    PVector momentum = PVector.mult(this. d.getVelocity(), INERTIA);
+    PVector cognitive = (PVector.sub(this.d.getBestPos(), this.d.getPosition())).mult(COG_CONST * r1);
     
-    this.d.vel = PVector.add(momentum, cognitive);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, cognitive));
   }
 }
 
 
-class SocOnly<T extends SwarmingDot> extends Accelerator {
+class SocOnly extends Accelerator<SwarmingDot> {
 
-  public void update_velocity() {
+  public void updateVelocity() {
     float r2 = random(1); // Keeping names in convention, r2 is the random number multiplied with the social constant
     
-    PVector momentum = PVector.mult(this.d.vel, INERTIA);
+    PVector momentum = PVector.mult(this.d.getVelocity(), INERTIA);
     
-    PVector social = (PVector.sub(this.d.parent.gDotBest.position, this.d.position)).mult(SOC_CONST * r2);
+    PVector social = (PVector.sub(this.d.getContainer().getGBestPos(), this.d.getPosition())).mult(SOC_CONST * r2);
     
-    this.d.vel = PVector.add(momentum, social);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, social));
   }
 }
 /* =========================================================

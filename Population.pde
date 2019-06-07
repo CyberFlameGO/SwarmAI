@@ -71,4 +71,8 @@ class SwarmPopulation extends Population<SwarmingDot> {
       d.resetBests();
     }
   }
+
+  public PVector getGBestPos() {
+    return this.gDotBest.getBestPos();
+  }
 }

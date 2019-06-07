@@ -35,7 +35,7 @@ class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements
 
     this.accelerator = accel;
     accel.setTarget(this);
-    
+
     this.controller = new SwarmBrain(this);
     this.velocity = PVector.random2D();
 
@@ -52,19 +52,34 @@ class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements
     this.accelerator.updateVelocity();
   }
 
+  public void resetBests() {
+    this.controller.resetBests();
+  }
+
   public void setAsBest(boolean isBest) {
     this.controller.isBest = isBest;
   }
 
-  public void resetBests() {
-    this.controller.resetBests();
+  public void setVelocity(PVector newVel) {
+    this.velocity = newVel;
+    this.velocity.limit(SPEED_LIMIT);
+  }
+
+  public PVector getPosition() {
+    return this.position;
+  }
+
+  public PVector getVelocity() {
+    return this.velocity;
   }
 
   public PVector getBestPos() {
     return this.controller.bestPosition;
   }
 
-  PVector getVelocity() {
-    return this.velocity;
+  public SwarmPopulation getContainer() {
+    return this.container;
   }
+
+
 }

@@ -6,18 +6,6 @@ interface Moveable {
 
 }
 
-public static Accelerator genAccelerator(String stepType) {
-  stepType = stepType.toLowerCase();
-  if (stepType.equals("full model")) {
-    return new FullModel();
-  } else if (stepType.equals("cognitive only")) {
-    return new CogOnly();
-  } else if (stepType.equals("social only")) {
-    return new SocOnly();
-  } else {
-    throw new IllegalArgumentException();
-  }
-}
 
 
 // -------------------------------------------------------
@@ -41,41 +29,38 @@ class FullModel extends Accelerator<SwarmingDot> {
     float r1 = random(1);
     float r2 = random(1);
     
-    PVector momentum = PVector.mult(this.d.vel, INERTIA);
-    PVector cognitive = (PVector.sub(this.d.bestPosition, this.d.position)).mult(COG_CONST * r1); 
-    PVector social = (PVector.sub(this.d.parent.gDotBest.position, this.d.position)).mult(SOC_CONST * r2);
+    PVector momentum = PVector.mult(this.d.getVelocity(), INERTIA);
+    PVector cognitive = (PVector.sub(this.d.getBestPos(), this.d.getPosition())).mult(COG_CONST * r1); 
+    PVector social = (PVector.sub(this.d.getContainer().getGBestPos(), this.d.getPosition())).mult(SOC_CONST * r2);
 
-    this.d.vel = PVector.add(momentum, cognitive).add(social);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, cognitive).add(social));
   }
 }
 
 
-class CogOnly<T extends SwarmingDot> extends Accelerator {
+class CogOnly extends Accelerator<SwarmingDot> {
 
-  public void update_velocity() {
+  public void updateVelocity() {
 
     float r1 = random(1); // Keeping names in convention, r1 is the random number multiplied with the cognitive constant
     
-    PVector momentum = PVector.mult(this. d.vel, INERTIA);
-    PVector cognitive = (PVector.sub(this.d.bestPosition, this.d.position)).mult(COG_CONST * r1);
+    PVector momentum = PVector.mult(this. d.getVelocity(), INERTIA);
+    PVector cognitive = (PVector.sub(this.d.getBestPos(), this.d.getPosition())).mult(COG_CONST * r1);
     
-    this.d.vel = PVector.add(momentum, cognitive);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, cognitive));
   }
 }
 
 
-class SocOnly<T extends SwarmingDot> extends Accelerator {
+class SocOnly extends Accelerator<SwarmingDot> {
 
-  public void update_velocity() {
+  public void updateVelocity() {
     float r2 = random(1); // Keeping names in convention, r2 is the random number multiplied with the social constant
     
-    PVector momentum = PVector.mult(this.d.vel, INERTIA);
+    PVector momentum = PVector.mult(this.d.getVelocity(), INERTIA);
     
-    PVector social = (PVector.sub(this.d.parent.gDotBest.position, this.d.position)).mult(SOC_CONST * r2);
+    PVector social = (PVector.sub(this.d.getContainer().getGBestPos(), this.d.getPosition())).mult(SOC_CONST * r2);
     
-    this.d.vel = PVector.add(momentum, social);
-    this.d.vel.limit(SPEED_LIMIT);
+    this.d.setVelocity(PVector.add(momentum, social));
   }
 }
