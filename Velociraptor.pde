@@ -1,4 +1,4 @@
-interface Moveable {
+interface Moveable<P extends Controller> {
 
   public void move();
   public void update();

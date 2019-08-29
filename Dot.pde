@@ -22,14 +22,14 @@ class Dot<P extends Population> extends Shape {
 /**
  * A dot with a velocity, swarm controller, and accelerator.
  */
-class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements Moveable {
+class SwarmingDot<A extends Accelerator, B extends SwarmBrain> extends Dot<SwarmPopulation> implements Moveable {
 
   // Velocity is a 2D vector
   PVector velocity;
-  SwarmBrain controller;
+  B controller;
   A accelerator;
 
-  public SwarmingDot(A accel, SwarmPopulation container, int radius, RenderDot renderest, color strokeMe, color fillMe, PVector position) {
+  public SwarmingDot(SwarmPopulation container, int radius, RenderDot renderest, color strokeMe, color fillMe, PVector position, A accel) {
 
     super(container, radius, renderest, strokeMe, fillMe, position);
 
@@ -82,4 +82,22 @@ class SwarmingDot<A extends Accelerator> extends Dot<SwarmPopulation> implements
   }
 
 
+}
+
+/** This class represents the Swarm's target.
+ * 
+ * The Goal initializes without a controller, instead waiting
+ * for a click event that trigger's the goal's @link click() method
+ */
+class Goal extends Dot implements Moveable {
+
+
+  public Goal(
+    int radius, RenderDot renderest, 
+    color strokeMe, color fillMe, PVector position) {
+
+        super(null, radius, renderest,  strokeMe, fillMe,  position);
+
+        
+      }
 }

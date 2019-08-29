@@ -28,7 +28,7 @@ String VEL_FUNC;    // Velocity update function for each burd,
 
 int DOT_RADIUS = 2; // Drawn radius for the dots
 
-/**Set up the simulation, defining the necessary constants,
+/** Set up the simulation, defining the necessary constants,
  * objects, and environment attributes.
  * 
  * Create the GUI from g4p on the first run, then sets the
@@ -76,13 +76,23 @@ void setup() {
   
 }
 
-/**The update function, called every frame to update the simulation
- * stat
+/** The update function, called every frame to update the simulation
+ * state
  * 
+ * Update the position of the mouse for later use, it will
+ * factor into whether the goal moves and where.
+ * Overwrite the display with the background to refresh the 
+ * frame, then render the goal at the origin–initially in the 
+ * center of the screen.
+ * After the goal renders, call the Population's show() function,
+ * which will render the population in individual places.
+
+ * Check if the goal is locked to the mouse, triggered by a
+ * click event on the goal. If so, trigger the goal's click()
+ * function.
  */
 void draw() {
   mouse = new PVector(mouseX, mouseY);
-  background(255);
   image(underlay, 0, 0);
   // Display goal
   fill(255, 0, 0);
@@ -106,6 +116,10 @@ void draw() {
   text("Target: " + goal, 3 * width/4.0 - 50, 10);
 }
 
+/**
+ *
+ *
+ */
 void setProblem() {
   switch (evalList.getSelectedText()) {
   case "Linear Distance":
@@ -135,6 +149,7 @@ void setProblem() {
 
   birbs.reset();
 }
+
 
 public Accelerator genAccelerator(String stepType) {
   stepType = stepType.toLowerCase();

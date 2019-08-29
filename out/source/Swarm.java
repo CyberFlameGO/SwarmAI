@@ -95,12 +95,15 @@ public void setup() {
 }
 
 /**The update function, called every frame to update the simulation
- * stat
+ * state
  * 
+ * Update the position of the mouse for later use, it will
+ * factor into whether the goal moves and where.
+ * Redraw the 
  */
 public void draw() {
   mouse = new PVector(mouseX, mouseY);
-  background(255);
+  // background(255);
   image(underlay, 0, 0);
   // Display goal
   fill(255, 0, 0);
@@ -153,6 +156,7 @@ public void setProblem() {
 
   birbs.reset();
 }
+
 
 public Accelerator genAccelerator(String stepType) {
   stepType = stepType.toLowerCase();
