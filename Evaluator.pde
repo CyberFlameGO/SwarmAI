@@ -6,9 +6,6 @@ class LinearEval extends Evaluator {
 
   public float evalFunction(PVector goal, PVector vel, PVector pos) {
     
-    float posX = pos.x;
-    float posY = pos.y;
-    
     return pos.dist(goal);
   }
 }

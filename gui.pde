@@ -18,9 +18,9 @@ public void resetHit(GImageButton source, GEvent event) { //_CODE_:resetButton:6
   setup();
 } //_CODE_:resetButton:623085:
 
-public void pauseHis(GImageButton source, GEvent event) { //_CODE_:button1:677062:
+public void pauseHit(GImageButton source, GEvent event) { //_CODE_:pauseButton:677062:
   pause = !pause;
-} //_CODE_:button1:677062:
+} //_CODE_:pauseButton:677062:
 
 public void evalListClicked(GDropList source, GEvent event) { //_CODE_:evalList:764184:
   setEvaluator();
@@ -58,10 +58,10 @@ public void createGUI(){
   speedLabel.setTextAlign(GAlign.CENTER, GAlign.MIDDLE);
   speedLabel.setText("Speed");
   speedLabel.setOpaque(true);
-  resetButton = new GImageButton(this, 864, 392, 100, 100, new String[] { "reset.png", "reset.png", "reset.png" } );
+  resetButton = new GImageButton(this, 870, 430, 100, 100, new String[] { "reset.png", "reset.png", "reset.png" } );
   resetButton.addEventHandler(this, "resetHit");
-  button1 = new GImageButton(this, 852, 518, 126, 125, new String[] { "play-pause.png", "play-pause.png", "play-pause.png" } );
-  button1.addEventHandler(this, "pauseHis");
+  pauseButton = new GImageButton(this, 870, 540, 100, 100, new String[] { "play-pause.png", "play-pause.png", "play-pause.png" } );
+  pauseButton.addEventHandler(this, "pauseHit");
   evalList = new GDropList(this, 834, 33, 154, 168, 5, 30);
   evalList.setItems(loadStrings("list_764184"), 0);
   evalList.setLocalColorScheme(GCScheme.GREEN_SCHEME);
@@ -112,7 +112,7 @@ public void createGUI(){
 GLabel inertiaLabel; 
 GLabel speedLabel; 
 GImageButton resetButton; 
-GImageButton button1; 
+GImageButton pauseButton; 
 GDropList evalList; 
 GCustomSlider speedSlider; 
 GCustomSlider inertiaSlide; 

@@ -44,7 +44,7 @@ class Population {
       } else if (!d.dead) {
         d.evaluate(this.goal);     // Evaluate the current dot's fitness if it's still alive
       
-        d.update_vel();    // Update the current dot's velocity
+        d.updateVelocity();    // Update the current dot's velocity
         d.move();
       }
       

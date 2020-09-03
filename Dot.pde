@@ -49,7 +49,7 @@ class Dot {
    * Update the internal velocity according to the fitness value.
    * Chnages internal state
    */
-  void update_vel() {
+  void updateVelocity() {
 
     if (position.x < 2 || position.y < 2 || position.x > width - 2 || position.y > height - 2) {
       this.dead = true;
@@ -62,8 +62,10 @@ class Dot {
     PVector momentum = PVector.mult(this.vel, INERTIA);
 
     PVector cognitive = (PVector.sub(this.bestPosition, this.position)).mult(COG_CONST * r1);
+    // Cognitive factor - the influence on the Dot's acceleration from the distance to its own historical best position
     
     PVector social = (PVector.sub(parent.gDotBest.position, this.position)).mult(SOC_CONST * r2);
+    // Social factor - the influence on the Dot's acceleration from its current distance to the Population's current global maximum
 
     this.vel = PVector.add(momentum, cognitive).add(social);
     this.vel.limit(SPEED_LIMIT);
